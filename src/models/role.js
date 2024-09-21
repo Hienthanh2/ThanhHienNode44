@@ -1,26 +1,26 @@
 import _sequelize from 'sequelize';
 const { Model, Sequelize } = _sequelize;
 
-export default class videos extends Model {
+export default class role extends Model {
   static init(sequelize, DataTypes) {
   return super.init({
-    video_id: {
+    role_id: {
       autoIncrement: true,
       type: DataTypes.INTEGER,
       allowNull: false,
       primaryKey: true
     },
-    name: {
+    role_name: {
       type: DataTypes.STRING(50),
       allowNull: true
     },
-    description: {
+    list_permission: {
       type: DataTypes.STRING(255),
       allowNull: true
     }
   }, {
     sequelize,
-    tableName: 'videos',
+    tableName: 'role',
     timestamps: false,
     indexes: [
       {
@@ -28,7 +28,7 @@ export default class videos extends Model {
         unique: true,
         using: "BTREE",
         fields: [
-          { name: "video_id" },
+          { name: "role_id" },
         ]
       },
     ]

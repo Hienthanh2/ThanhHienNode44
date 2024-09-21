@@ -1,6 +1,7 @@
 // step 1: import framework
 import express from "express";
 import rootRoutes from "./src/routes/root.router.js";
+import cors from "cors";
 
 // step 2: init express object
 const app = express();
@@ -8,6 +9,9 @@ const port = 8080;
 
 // add middleware to read JSON
 app.use(express.json());
+
+// add middleware cors to allow frontend to call api to backend
+app.use(cors());
 
 // import root routes
 app.use(rootRoutes);

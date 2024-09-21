@@ -1,25 +1,50 @@
 import _sequelize from "sequelize";
 const DataTypes = _sequelize.DataTypes;
-import _employees from  "./employees.js";
-import _user_like from  "./user_like.js";
+import _chat from  "./chat.js";
+import _code from  "./code.js";
+import _permission from  "./permission.js";
+import _role from  "./role.js";
 import _users from  "./users.js";
-import _videos from  "./videos.js";
+import _video from  "./video.js";
+import _video_comment from  "./video_comment.js";
+import _video_like from  "./video_like.js";
+import _video_type from  "./video_type.js";
 
 export default function initModels(sequelize) {
-  const employees = _employees.init(sequelize, DataTypes);
-  const user_like = _user_like.init(sequelize, DataTypes);
+  const chat = _chat.init(sequelize, DataTypes);
+  const code = _code.init(sequelize, DataTypes);
+  const permission = _permission.init(sequelize, DataTypes);
+  const role = _role.init(sequelize, DataTypes);
   const users = _users.init(sequelize, DataTypes);
-  const videos = _videos.init(sequelize, DataTypes);
+  const video = _video.init(sequelize, DataTypes);
+  const video_comment = _video_comment.init(sequelize, DataTypes);
+  const video_like = _video_like.init(sequelize, DataTypes);
+  const video_type = _video_type.init(sequelize, DataTypes);
 
-  user_like.belongsTo(users, { as: "user", foreignKey: "user_id"});
-  users.hasMany(user_like, { as: "user_likes", foreignKey: "user_id"});
-  user_like.belongsTo(videos, { as: "video", foreignKey: "video_id"});
-  videos.hasMany(user_like, { as: "user_likes", foreignKey: "video_id"});
+  users.belongsTo(role, { as: "role", foreignKey: "role_id"});
+  role.hasMany(users, { as: "users", foreignKey: "role_id"});
+  video.belongsTo(users, { as: "user", foreignKey: "user_id"});
+  users.hasMany(video, { as: "videos", foreignKey: "user_id"});
+  video_comment.belongsTo(users, { as: "user", foreignKey: "user_id"});
+  users.hasMany(video_comment, { as: "video_comments", foreignKey: "user_id"});
+  video_like.belongsTo(users, { as: "user", foreignKey: "user_id"});
+  users.hasMany(video_like, { as: "video_likes", foreignKey: "user_id"});
+  video_comment.belongsTo(video, { as: "video", foreignKey: "video_id"});
+  video.hasMany(video_comment, { as: "video_comments", foreignKey: "video_id"});
+  video_like.belongsTo(video, { as: "video", foreignKey: "video_id"});
+  video.hasMany(video_like, { as: "video_likes", foreignKey: "video_id"});
+  video.belongsTo(video_type, { as: "type", foreignKey: "type_id"});
+  video_type.hasMany(video, { as: "videos", foreignKey: "type_id"});
 
   return {
-    employees,
-    user_like,
+    chat,
+    code,
+    permission,
+    role,
     users,
-    videos,
+    video,
+    video_comment,
+    video_like,
+    video_type,
   };
 }
