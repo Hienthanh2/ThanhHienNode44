@@ -1,2 +1,4 @@
 node_modules
 .env
+refresh_token.private.key
+refresh_token.public.key

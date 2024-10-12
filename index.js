@@ -2,6 +2,7 @@
 import express from "express";
 import rootRoutes from "./src/routes/root.router.js";
 import cors from "cors";
+import cookieParser from "cookie-parser";
 
 // step 2: init express object
 const app = express();
@@ -11,7 +12,15 @@ const port = 8080;
 app.use(express.json());
 
 // add middleware cors to allow frontend to call api to backend
-app.use(cors());
+app.use(
+  cors({
+    origin: "http://localhost:3000", // cấp quyền cho FE
+    credentials: true, // cho phép FE lấy cookie và lưu vào cookie browser
+  })
+);
+
+// add middleware to read cookie from request
+app.use(cookieParser());
 
 // import root routes
 app.use(rootRoutes);

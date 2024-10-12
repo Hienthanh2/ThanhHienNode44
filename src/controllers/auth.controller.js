@@ -8,9 +8,8 @@ import {
 import initModels from "../models/init-models.js";
 import sequelize from "../models/connect.js";
 import bcrypt from "bcrypt";
-import jwt from "jsonwebtoken";
 import transporter from "../config/transporter.js";
-import { createToken } from "../config/jwt.js";
+import { createRefreshToken, createToken } from "../config/jwt.js";
 
 const model = initModels(sequelize);
 
@@ -98,6 +97,23 @@ export const login = async (req, res) => {
     };
 
     let accessToken = createToken(payload);
+    // create refresh token and save to db
+    let refreshToken = createRefreshToken(payload);
+
+    await model.users.update(
+      {
+        refresh_token: refreshToken,
+      },
+      { where: { user_id: user.user_id } }
+    );
+
+    // save refresh token into cookie
+    res.cookie("refresh_token", refreshToken, {
+      httpOnly: true, // Cookie không thể truy cập từ javascript (FE)
+      secure: false, // để chạy dưới localhost
+      sameSite: "Lax", // đảm bảo cho cookie được gửi trong các domain khác nhau
+      maxAge: 7 * 24 * 60 * 60 * 1000, // thời gian tồn tại cookie trong browser 7 days
+    });
 
     return res.status(OK_STATUS).json({
       message: "Login successful",
@@ -139,4 +155,29 @@ export const loginFacebook = async (req, res) => {
       .status(INTERNAL_SERVER_ERROR_STATUS)
       .json({ message: error.message });
   }
+};
+
+export const extendToken = async (req, res) => {
+  // Lấy refresh token từ cookie request
+  const refreshToken = req.cookies.refresh_token;
+
+  if (!refreshToken) {
+    return res.status(401);
+  }
+
+  const checkRefreshToken = await model.users.findOne({
+    where: {
+      refresh_token: refreshToken,
+    },
+  });
+
+  if (!checkRefreshToken) {
+    return res.status(401);
+  }
+
+  const newToken = createToken({ userId: checkRefreshToken.user_id });
+
+  return res
+    .status(200)
+    .json({ message: "extend token successful", data: newToken });
 };
