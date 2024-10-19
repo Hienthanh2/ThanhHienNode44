@@ -8,6 +8,9 @@ import cookieParser from "cookie-parser";
 const app = express();
 const port = 8080;
 
+// define middleware to public folder "public"
+app.use(express.static("."));
+
 // add middleware to read JSON
 app.use(express.json());
 

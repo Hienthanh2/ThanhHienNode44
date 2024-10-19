@@ -1,4 +1,5 @@
 import {
+  CLIENT_ERROR_STATUS,
   CREATED_STATUS,
   INTERNAL_SERVER_ERROR_STATUS,
   NOT_FOUND_STATUS,
@@ -8,8 +9,10 @@ import {
 import initModels from "../models/init-models.js";
 import sequelize from "../models/connect.js";
 import { Op } from "sequelize"; // operator: LIKE, AND, IN, OR
+import { PrismaClient } from "@prisma/client";
 
 const model = initModels(sequelize);
+const prisma = new PrismaClient();
 
 const createUser = async (req, res) => {
   // const params = req.params;
@@ -23,10 +26,18 @@ const createUser = async (req, res) => {
   try {
     const { full_name, email, pass_word } = req.body;
 
-    let newUser = await model.users.create({
-      full_name,
-      email,
-      pass_word,
+    // let newUser = await model.users.create({
+    //   full_name,
+    //   email,
+    //   pass_word,
+    // });
+
+    const newUser = await prisma.users.create({
+      data: {
+        full_name,
+        email,
+        pass_word,
+      },
     });
 
     return res
@@ -77,32 +88,21 @@ const getAllUsers = async (req, res) => {
 const deleteUser = async (req, res) => {
   try {
     const { user_id } = req.params;
-    // await pool.query("START TRANSACTION");
-    // await pool.query(`
-    //     DELETE FROM user_like
-    //     WHERE user_id = ${id};
-    //   `);
-    // await pool.query(`
-    //     DELETE FROM users
-    //     WHERE user_id = ${id};
-    //   `);
-    // await pool.query("COMMIT");
-    // await pool.query("ROLLBACK");
-
-    // res
-    //   .status(OK_STATUS)
-    //   .json({ message: `User with ID ${id} deleted successfully` });
-
-    let user = await model.users.findByPk(user_id);
+    const user = await prisma.users.findFirst({
+      where: { user_id: Number(user_id) },
+    });
 
     if (!user) {
       return res.status(NOT_FOUND_STATUS).json({ message: "User not found!" });
     }
 
-    user.destroy();
+    const deleteInfo = await prisma.users.delete({
+      where: { user_id: Number(user_id) },
+    });
+
     return res
       .status(OK_STATUS)
-      .json({ message: "User deleted successfully!" });
+      .json({ message: "User deleted successfully!", data: deleteInfo });
   } catch (err) {
     return res.status(INTERNAL_SERVER_ERROR_STATUS).json({ message: err });
   }
@@ -114,20 +114,24 @@ const updateUser = async (req, res) => {
     const { full_name, pass_word } = req.body;
 
     // check user có tồn tại trong database hay không
-    let user = await model.users.findByPk(user_id);
+    // let user = await model.users.findByPk(user_id);
+    const user = await prisma.users.findFirst({
+      where: {
+        user_id: Number(user_id),
+      },
+    });
     if (!user) {
       return res.status(NOT_FOUND_STATUS).json({ message: "User not found!" });
     }
 
-    const updateStatus = await model.users.update(
-      { full_name, pass_word },
-      { where: { user_id } }
-    );
+    // C1: use update method
+    const data = await prisma.users.update({
+      data: { full_name, pass_word },
+      where: { user_id: Number(user_id) },
+    });
 
     return res.status(OK_STATUS).json({
-      message: updateStatus[0]
-        ? "Update successfully"
-        : "Nothing new to change",
+      data,
     });
   } catch (err) {
     return res
@@ -136,4 +140,40 @@ const updateUser = async (req, res) => {
   }
 };
 
-export { createUser, getAllUsers, deleteUser, updateUser };
+const uploadAvatar = async (req, res) => {
+  try {
+    const { user_id } = req.body;
+    const file = req.file;
+
+    const user = await prisma.users.findFirst({
+      where: { user_id: Number(user_id) },
+    });
+
+    if (!user) {
+      return res
+        .status(CLIENT_ERROR_STATUS)
+        .json({ message: "User not found!" });
+    }
+
+    // update column avatar in table users
+    const avatarPath = `/public/imgs/${file.filename}`;
+    await prisma.users.update({
+      data: {
+        avatar: avatarPath,
+      },
+      where: {
+        user_id: Number(user_id),
+      },
+    });
+
+    return res
+      .status(200)
+      .json({ message: "Upload avatar successfully!", data: avatarPath });
+  } catch (err) {
+    return res
+      .status(INTERNAL_SERVER_ERROR_STATUS)
+      .json({ message: err.message });
+  }
+};
+
+export { createUser, getAllUsers, deleteUser, updateUser, uploadAvatar };

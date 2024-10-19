@@ -5,12 +5,15 @@ import {
   INTERNAL_SERVER_ERROR_STATUS,
   OK_STATUS,
 } from "../../const.js";
+import { PrismaClient } from "@prisma/client";
 
-const model = initModels(sequelize);
+const model = initModels(sequelize); // sequelize
+const prisma = new PrismaClient(); // prisma
 
 const getListVideos = async (req, res) => {
   try {
-    const videos = await model.video.findAll();
+    // const videos = await model.video.findAll();
+    const videos = await prisma.video.findMany();
 
     return res.status(OK_STATUS).json(videos);
   } catch (error) {
@@ -22,7 +25,8 @@ const getListVideos = async (req, res) => {
 
 const getListVideoTypes = async (req, res) => {
   try {
-    const videoTypes = await model.video_type.findAll();
+    // const videoTypes = await model.video_type.findAll();
+    const videoTypes = await prisma.video.findMany();
 
     return res.status(OK_STATUS).json(videoTypes);
   } catch (error) {
@@ -36,9 +40,23 @@ const getVideosByTypeId = async (req, res) => {
   try {
     let { type_id } = req.params;
 
-    let data = await model.video.findAll({
+    // let data = await model.video.findAll({
+    //   where: {
+    //     type_id,
+    //   },
+    // });
+
+    const data = await prisma.video.findMany({
       where: {
-        type_id,
+        type_id: Number(type_id), // Với prisma, phải truyền đúng kiểu dữ liệu
+      },
+      include: {
+        users: {
+          select: {
+            full_name: true,
+            email: true,
+          },
+        },
       },
     });
 
@@ -67,9 +85,14 @@ const getVideoPage = async (req, res) => {
 
     let index = (page - 1) * size;
 
-    let data = await model.video.findAll({
-      offset: index,
-      limit: size,
+    // let data = await model.video.findAll({
+    //   offset: index,
+    //   limit: size,
+    // });
+
+    const data = await prisma.video.findMany({
+      skip: index,
+      take: size,
     });
 
     return res.status(OK_STATUS).json(data);

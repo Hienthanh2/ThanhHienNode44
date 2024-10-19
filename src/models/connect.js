@@ -7,7 +7,7 @@ const sequelize = new Sequelize({
   password: configDb.pass,
   host: configDb.host,
   port: configDb.port,
-  dialect: configDb.dialect,
+  dialect: "mysql", // Error: Dialect needs to be explicitly supplied as of v4.0.0 => fix this error when running test
 });
 
 export default sequelize;

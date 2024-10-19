@@ -2,3 +2,5 @@ node_modules
 .env
 refresh_token.private.key
 refresh_token.public.key
+access_token.private.key
+access_token.public.key
