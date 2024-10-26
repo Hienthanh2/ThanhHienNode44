@@ -62,14 +62,14 @@ const getAllUsers = async (req, res) => {
           [Op.like]: `%${full_name}%`,
         },
       },
-      attributes: ["full_name"],
+      // attributes: ["full_name"],
       // join table
       include: [
         {
           model: model.video, // chọn model muốn join
           as: "videos",
           attributes: ["video_name", "user_id"], // chỉ định những columns nào sẽ hiện thị
-          required: true, // default sẽ dùng left join -> dùng inner join xài required: true
+          //required: true, // default sẽ dùng left join -> dùng inner join xài required: true
           include: [
             {
               model: model.video_comment,

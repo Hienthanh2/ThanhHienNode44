@@ -3,6 +3,11 @@ import express from "express";
 import rootRoutes from "./src/routes/root.router.js";
 import cors from "cors";
 import cookieParser from "cookie-parser";
+import { Server } from "socket.io"; // use for creating real time server
+import { createServer } from "http";
+import { PrismaClient } from "@prisma/client";
+
+const prisma = new PrismaClient();
 
 // step 2: init express object
 const app = express();
@@ -11,9 +16,6 @@ const port = 8080;
 // define middleware to public folder "public"
 app.use(express.static("."));
 
-// add middleware to read JSON
-app.use(express.json());
-
 // add middleware cors to allow frontend to call api to backend
 app.use(
   cors({
@@ -21,6 +23,64 @@ app.use(
     credentials: true, // cho phép FE lấy cookie và lưu vào cookie browser
   })
 );
+
+// step 3: create http server
+const server = createServer(app);
+
+// Create socketIO server
+const io = new Server(server, {
+  cors: {
+    origin: "*",
+  },
+}); // mapping server with io to create a socket io server
+
+// listening event from client through socket
+// io - object of socket server
+// socket - object of socket client
+// on: receive event
+// emit: send event
+// param of on and emit:
+// param 1: event type: event of socketIO or custom event defined by user
+// param 2: function
+let number = 0;
+io.on("connection", (socket) => {
+  // BE receive emit event from client
+  socket.on("send-click-increase", () => {
+    console.log("send click!");
+    number += 1;
+
+    // Server send event for all client
+    io.emit("send-new-number", number);
+  });
+
+  socket.on("send-click-reduce", () => {
+    console.log("send click!");
+    number -= 1;
+
+    // Server send event for all client
+    io.emit("send-new-number", number);
+  });
+
+  // receive event send message
+  socket.on("send-message", async ({ user_id, content }) => {
+    console.log({ user_id, content });
+
+    const newChat = {
+      user_id,
+      content,
+      date: new Date(),
+    };
+
+    // Save chat to db
+    await prisma.chat.create({ data: newChat });
+
+    // Server send to new chat to client
+    io.emit("server-send-message", newChat);
+  });
+});
+
+// add middleware to read JSON
+app.use(express.json());
 
 // add middleware to read cookie from request
 app.use(cookieParser());
@@ -75,3 +135,5 @@ app.get("/test-header", (req, res) => {
 app.listen(port, () => {
   console.log(`Server is listening on port ${port}`);
 });
+
+io.listen(8081);
